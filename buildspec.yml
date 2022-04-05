@@ -10,7 +10,7 @@ phases:
     build:
         commands:
             - npm run build
-            - npm run -- cdk deploy --ci --require-approval never -a "npx ts-node bin/lambda.ts"
+            - npm run -- cdk deploy --ci --require-approval never -a "npx ts-node bin/lambda.ts" --all
 artifacts:
     files:
         - "cdk.out/**/*"
