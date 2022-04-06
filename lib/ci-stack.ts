@@ -133,6 +133,7 @@ export class CIStack extends Stack {
             "lambda:GetFunctionConfiguration",
             "lambda:AddPermission",
             "lambda:RemovePermission",
+            "ssm:GetParameter",
             "ssm:CancelCommand",
             "ssm:ListCommands",
             "ssm:DescribeMaintenanceWindowSchedule",
