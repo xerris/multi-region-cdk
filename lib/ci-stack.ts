@@ -26,6 +26,7 @@ export class CIStack extends Stack {
         const sourceAction = new CodeCommitSourceAction({
             actionName: "CodeCommit",
             repository: repo,
+            branch: "main",
             output: sourceOutput,
         })
         pipeline.addStage({
@@ -43,62 +44,12 @@ export class CIStack extends Stack {
             },
         })
 
-        const cdkDeployPolicy = new PolicyStatement()
-        cdkDeployPolicy.addActions(
-            "cloudformation:GetTemplate",
-            "cloudformation:CreateChangeSet",
-            "cloudformation:DescribeChangeSet",
-            "cloudformation:ExecuteChangeSet",
-            "cloudformation:DescribeStackEvents",
-            "cloudformation:DeleteChangeSet",
-            "cloudformation:DescribeStacks",
-            "s3:*Object",
-            "s3:ListBucket",
-            "s3:getBucketLocation",
-            "lambda:UpdateFunctionCode",
-            "lambda:GetFunction",
-            "lambda:CreateFunction",
-            "lambda:DeleteFunction",
-            "lambda:GetFunctionConfiguration",
-            "lambda:AddPermission",
-            "lambda:RemovePermission"
-        )
-        cdkDeployPolicy.addResources(
-            this.formatArn({
-                service: "cloudformation",
-                resource: "stack",
-                resourceName: "CDKToolkit/*",
-            }),
-            this.formatArn({
-                service: "cloudformation",
-                resource: "stack",
-                resourceName: `${lambdaApiStackName}/*`,
-            }),
-            this.formatArn({
-                service: "lambda",
-                resource: "function",
-                arnFormat: ArnFormat.COLON_RESOURCE_NAME,
-                resourceName: lambdaFunctionName,
-            }),
-            "arn:aws:s3:::cdktoolkit-stagingbucket-*"
-        )
-        const editOrCreateLambdaDependencies = new PolicyStatement()
-        editOrCreateLambdaDependencies.addActions(
-            "iam:GetRole",
-            "iam:PassRole",
-            "iam:CreateRole",
-            "iam:AttachRolePolicy",
-            "iam:PutRolePolicy",
-            "apigateway:GET",
-            "apigateway:DELETE",
-            "apigateway:PUT",
-            "apigateway:POST",
-            "apigateway:PATCH",
-            "s3:CreateBucket",
-            "s3:PutBucketTagging"
-        )
-        editOrCreateLambdaDependencies.addResources("*")
+        const cdkDeployPolicy = this.createCDKDeploymentPolicy()
+        const s3Policy = this.createS3Policy()
+        const editOrCreateLambdaDependencies = this.createMicroservicePolicy()
+
         project.addToRolePolicy(cdkDeployPolicy)
+        project.addToRolePolicy(s3Policy)
         project.addToRolePolicy(editOrCreateLambdaDependencies)
 
         const buildOutput = new Artifact(`BuildOutput`)
@@ -115,5 +66,144 @@ export class CIStack extends Stack {
         })
 
         return buildOutput
+    }
+
+    private createMicroservicePolicy() {
+        const editOrCreateLambdaDependencies = new PolicyStatement()
+        editOrCreateLambdaDependencies.addActions(
+            "iam:GetRole",
+            "iam:PassRole",
+            "iam:CreateRole",
+            "iam:AttachRolePolicy",
+            "iam:PutRolePolicy",
+            "apigateway:GET",
+            "apigateway:DELETE",
+            "apigateway:PUT",
+            "apigateway:POST",
+            "apigateway:PATCH",
+            "s3:CreateBucket",
+            "s3:PutBucketTagging"
+        )
+        editOrCreateLambdaDependencies.addResources("*")
+        return editOrCreateLambdaDependencies
+    }
+
+    private createCDKDeploymentPolicy() {
+        const cdkDeployPolicy = new PolicyStatement()
+        cdkDeployPolicy.addActions(
+            "cloudformation:GetTemplate",
+            "cloudformation:CreateChangeSet",
+            "cloudformation:DescribeChangeSet",
+            "cloudformation:ExecuteChangeSet",
+            "cloudformation:DescribeStackEvents",
+            "cloudformation:DeleteChangeSet",
+            "cloudformation:DescribeStacks",
+            "cloudformation:RegisterType",
+            "cloudformation:CreateUploadBucket",
+            "cloudformation:ListExports",
+            "cloudformation:DescribeStackDriftDetectionStatus",
+            "cloudformation:SetTypeDefaultVersion",
+            "cloudformation:RegisterPublisher",
+            "cloudformation:ActivateType",
+            "cloudformation:ListTypes",
+            "cloudformation:DeactivateType",
+            "cloudformation:SetTypeConfiguration",
+            "cloudformation:DeregisterType",
+            "cloudformation:ListTypeRegistrations",
+            "cloudformation:EstimateTemplateCost",
+            "cloudformation:DescribeAccountLimits",
+            "cloudformation:BatchDescribeTypeConfigurations",
+            "cloudformation:CreateStackSet",
+            "cloudformation:ListStacks",
+            "cloudformation:DescribeType",
+            "cloudformation:ListImports",
+            "cloudformation:PublishType",
+            "cloudformation:DescribePublisher",
+            "cloudformation:DescribeTypeRegistration",
+            "cloudformation:TestType",
+            "cloudformation:ValidateTemplate",
+            "cloudformation:ListTypeVersions",
+            "s3:*Object",
+            "s3:ListBucket",
+            "s3:getBucketLocation",
+            "lambda:UpdateFunctionCode",
+            "lambda:GetFunction",
+            "lambda:CreateFunction",
+            "lambda:DeleteFunction",
+            "lambda:GetFunctionConfiguration",
+            "lambda:AddPermission",
+            "lambda:RemovePermission",
+            "ssm:CancelCommand",
+            "ssm:ListCommands",
+            "ssm:DescribeMaintenanceWindowSchedule",
+            "ssm:SendAutomationSignal",
+            "ssm:DescribeInstancePatches",
+            "ssm:CreateActivation",
+            "ssm:CreateOpsItem",
+            "ssm:GetMaintenanceWindowExecutionTaskInvocation",
+            "ssm:DescribeAutomationExecutions",
+            "ssm:DeleteActivation",
+            "ssm:DescribeMaintenanceWindowExecutionTaskInvocations",
+            "ssm:DescribeAutomationStepExecutions",
+            "ssm:ListOpsMetadata",
+            "ssm:UpdateInstanceInformation",
+            "ssm:DescribeParameters",
+            "ssm:ListResourceDataSync",
+            "ssm:ListDocuments",
+            "ssm:DescribeMaintenanceWindowsForTarget",
+            "ssm:ListComplianceItems",
+            "ssm:GetConnectionStatus",
+            "ssm:GetMaintenanceWindowExecutionTask",
+            "ssm:GetMaintenanceWindowExecution",
+            "ssm:ListResourceComplianceSummaries",
+            "ssm:ListOpsItemRelatedItems",
+            "ssm:DescribeOpsItems",
+            "ssm:DescribeMaintenanceWindows",
+            "ssm:CancelMaintenanceWindowExecution",
+            "ssm:DescribeAssociationExecutions",
+            "ssm:ListCommandInvocations",
+            "ssm:GetAutomationExecution",
+            "ssm:DescribePatchGroups",
+            "ssm:ListAssociationVersions",
+            "ssm:PutConfigurePackageResult",
+            "ssm:DescribePatchGroupState",
+            "ssm:CreatePatchBaseline",
+            "ssm:GetManifest",
+            "ssm:DeleteInventory",
+            "ssm:DescribeMaintenanceWindowExecutionTasks",
+            "ssm:DescribeInstancePatchStates",
+            "ssm:DescribeInstancePatchStatesForPatchGroup",
+            "ssm:RegisterManagedInstance",
+            "ssm:GetInventorySchema",
+            "ssm:CreateMaintenanceWindow",
+            "ssm:DescribeAssociationExecutionTargets",
+            "ssm:DescribeInstanceProperties",
+            "ssm:ListInventoryEntries",
+            "ssm:ListOpsItemEvents",
+            "ssm:GetDeployablePatchSnapshotForInstance",
+            "ssm:DescribeSessions",
+            "ssm:DescribePatchBaselines",
+            "ssm:DescribeInventoryDeletions",
+            "ssm:DescribePatchProperties",
+            "ssm:GetInventory",
+            "ssm:DescribeActivations",
+            "ssm:StopAutomationExecution",
+            "ssm:GetCommandInvocation",
+            "ssm:CreateOpsMetadata",
+            "ssm:ListComplianceSummaries",
+            "ssm:PutInventory",
+            "ssm:DescribeInstanceInformation",
+            "ssm:ListAssociations",
+            "ssm:DescribeAvailablePatches"
+        )
+        cdkDeployPolicy..addAllResources()
+        return cdkDeployPolicy
+    }
+
+    private createS3Policy() {
+        const s3Policy = new PolicyStatement()
+        s3Policy.addActions("s3:*", "s3-object-lambda:*")
+        s3Policy.addAllResources()
+        return s3Policy
     }
 }
